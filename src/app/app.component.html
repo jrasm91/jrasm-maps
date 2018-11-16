@@ -1,20 +1,44 @@
-<!--The content below is only a placeholder and can be replaced.-->
-<div style="text-align:center">
-  <h1>
-    Welcome to {{ title }}!
-  </h1>
-  <img width="300" alt="Angular Logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTAgMjUwIj4KICAgIDxwYXRoIGZpbGw9IiNERDAwMzEiIGQ9Ik0xMjUgMzBMMzEuOSA2My4ybDE0LjIgMTIzLjFMMTI1IDIzMGw3OC45LTQzLjcgMTQuMi0xMjMuMXoiIC8+CiAgICA8cGF0aCBmaWxsPSIjQzMwMDJGIiBkPSJNMTI1IDMwdjIyLjItLjFWMjMwbDc4LjktNDMuNyAxNC4yLTEyMy4xTDEyNSAzMHoiIC8+CiAgICA8cGF0aCAgZmlsbD0iI0ZGRkZGRiIgZD0iTTEyNSA1Mi4xTDY2LjggMTgyLjZoMjEuN2wxMS43LTI5LjJoNDkuNGwxMS43IDI5LjJIMTgzTDEyNSA1Mi4xem0xNyA4My4zaC0zNGwxNy00MC45IDE3IDQwLjl6IiAvPgogIDwvc3ZnPg==">
-</div>
-<h2>Here are some links to help you start: </h2>
-<ul>
-  <li>
-    <h2><a target="_blank" rel="noopener" href="https://angular.io/tutorial">Tour of Heroes</a></h2>
-  </li>
-  <li>
-    <h2><a target="_blank" rel="noopener" href="https://github.com/angular/angular-cli/wiki">CLI Documentation</a></h2>
-  </li>
-  <li>
-    <h2><a target="_blank" rel="noopener" href="https://blog.angular.io/">Angular blog</a></h2>
-  </li>
-</ul>
-
+<nav class="fixed-top navbar navbar-expand-sm navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="#">Maps</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle text-light" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
+            aria-haspopup="true" aria-expanded="false">
+            Boundaries ({{ searchValue }})
+          </a>
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <a *ngFor="let polygon of polygons; let i = index" class="dropdown-item d-flex justify-content-between"
+              (mouseenter)="selectPolygon(polygon) " (mouseleave)="deselectPolygon(polygon)">
+              #{{ (i + 1) }} Boundary
+              <span class="cursor">
+                <i (click)="removePolygon(polygon)" class="fa fa-times text-danger"></i>
+              </span>
+            </a>
+            <span *ngIf="polygons.length === 0" class="dropdown-item">
+              (no boundaries)
+            </span>
+          </div>
+        </li>
+        <li>
+          <button *ngIf="mode === 'VIEWING'" type="button" class="btn btn-primary ml-1" (click)="onDraw()">Draw</button>
+          <button *ngIf="mode === 'VIEWING'" type="button" class="btn btn-primary ml-1" (click)="onAdjust()">Adjust</button>
+          <button *ngIf="mode !== 'VIEWING'" type="button" class="btn btn-secondary ml-1" (click)="onFinish()">Finish</button>
+          <button type="button" class="btn btn-default ml-2" (click)="onToggleFill()">Change Fill</button>
+          <button type="button" class="btn btn-success ml-3" (click)="saveToBackend()">Save Map</button>
+        </li>
+      </ul>
+      <form class="form-inline my-2 my-lg-0">
+        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="search"
+          [(ngModel)]="searchValue">
+        <button class="btn btn-primary my-2 my-sm-0" type="button" (click)="search()">Search</button>
+      </form>
+    </div>
+  </div>
+</nav>
+<div id="map-canvas"></div>
