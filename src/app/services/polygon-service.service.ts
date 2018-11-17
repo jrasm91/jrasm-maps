@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { Observable } from 'rxjs';
+import { MapMarker, MapPosition, MapPolygon } from '../models/maps.model';
 
 @Injectable({
   providedIn: 'root'
@@ -14,8 +15,17 @@ export class PolygonServiceService {
     this.mapsRef = this.db.collection('maps');
   }
 
-  save(name: string, polygons: Array<any>, center: any, zoom: number) {
-    this.mapsRef.doc(name).set({ name, polygons, center, zoom })
+  save(name: string, polygons: MapPolygon[], markers: MapMarker[], center: MapPosition, zoom: number) {
+    const strippedMarkers = markers.map(marker => {
+      const strippedMarker = Object.assign({}, marker);
+      delete strippedMarker.infowindow;
+      delete strippedMarker.googleMarker;
+      return strippedMarker;
+    });
+
+    console.log(name, polygons, strippedMarkers, center, zoom);
+
+    this.mapsRef.doc(name).set({ name, polygons, markers: strippedMarkers, center, zoom })
   }
 
   search(name: string): Observable<any> {

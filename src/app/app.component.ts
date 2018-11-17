@@ -1,14 +1,15 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { GoogleLoaderService } from './services/google-loader.service';
 import { PolygonServiceService } from './services/polygon-service.service';
-import { ActivatedRoute } from '@angular/router'
-import { modelGroupProvider } from '@angular/forms/src/directives/ng_model_group';
+import { MapMarker, MapPolygon } from './models/maps.model';
 
 export enum Mode {
   ADJUSTING = 'ADJUSTING',
   VIEWING = 'VIEWING',
   DRAWING = 'DRAWING'
 }
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -17,7 +18,6 @@ export enum Mode {
 export class AppComponent implements OnInit, AfterViewInit {
   title = 'jrasm-maps';
   ADJUSTING: boolean = false;
-  polygons: Array<any> = [];
   searchValue = '';
   mode: Mode = Mode.VIEWING;
   fillOpacity = 0.25;
@@ -25,6 +25,9 @@ export class AppComponent implements OnInit, AfterViewInit {
   private google: any;
   private map: any;
   private drawingManager: any;
+
+  private markers: MapMarker[] = [];
+  polygons: MapPolygon[] = [];
 
   constructor(
     private googleMapsLoader: GoogleLoaderService,
@@ -48,6 +51,21 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 
+  onFileUpload(e) {
+    if (e && e.target && e.target.files) {
+      const file = e.target.files[0];
+      const fileReader = new FileReader();
+      fileReader.onload = (e) => {
+        const rawData = fileReader.result as string;
+        this.markers = JSON.parse(rawData);
+        this.onMarkersLoaded();
+        console.log(rawData);
+        console.log(this.markers)
+      }
+      fileReader.readAsText(file);
+    }
+  }
+
   onGoogleLoaded(google) {
     this.map = new google.maps.Map(document.getElementById('map-canvas'), {
       zoom: 10,
@@ -56,10 +74,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       panControl: false,
       streetViewControl: false,
       mapTypeControl: false,
-      zoomControl: false,
-      // zoomControlOptions: {
-      //   style: google.maps.ZoomControlStyle.SMALL
-      // },
+      zoomControl: true,
+      zoomControlOptions: {
+        style: google.maps.ZoomControlStyle.SMALL
+      },
       scaleControl: false,
       styles: [{
         featureType: "poi",
@@ -87,11 +105,55 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 
+  drawMarkersInPolygon(polygon: any) {
+    const google = this.google;
+
+    this.markers.forEach(markerData => {
+      const position = markerData.position;
+      const googleLatLng = new google.maps.LatLng(position.lat, position.lng);
+      if (google.maps.geometry.poly.containsLocation(googleLatLng, polygon)) {
+        if (markerData.googleMarker.getMap()) {
+          markerData.googleMarker.setMap(null);
+        } else {
+          markerData.googleMarker.setMap(this.map);
+        }
+      }
+    });
+  }
+
+  onMarkersLoaded() {
+    const google = this.google;
+
+    this.markers.forEach(markerData => {
+      const googleMarker = new google.maps.Marker({
+        position: markerData.position,
+        map: null,
+        title: markerData.title,
+        icon: '/assets/icon.png'
+      });
+
+      const infowindow = new google.maps.InfoWindow({
+        content: markerData.title
+      });
+
+      infowindow.open(this.map, googleMarker);
+      googleMarker.setMap(null);
+
+      googleMarker.addListener('click', function () {
+        infowindow.open(this.map, googleMarker);
+      });
+
+
+      markerData.googleMarker = googleMarker;
+      markerData.infowindow = infowindow;
+    });
+  }
+
   saveToBackend() {
     const name = this.searchValue;
     const polygons = this.polygons.map(polygon => {
       return {
-        paths: polygon.getPath().getArray().map(path => {
+        paths: (polygon as any).getPath().getArray().map(path => {
           return {
             lat: path.lat(),
             lng: path.lng()
@@ -100,7 +162,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       };
     });
 
-    this.api.save(name, polygons, this.map.center.toJSON(), this.map.getZoom());
+    this.api.save(name, polygons, this.markers, this.map.center.toJSON(), this.map.getZoom());
   }
 
   search() {
@@ -118,6 +180,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         if (map.center) {
           this.map.setCenter(map.center)
         }
+        if (map.markers) {
+          this.markers = map.markers;
+          this.onMarkersLoaded();
+        }
       }
     })
   }
@@ -125,7 +191,10 @@ export class AppComponent implements OnInit, AfterViewInit {
   addPolygon(polygon) {
     polygon.setOptions(this.getPolygonOptions());
     polygon.setMap(this.map);
-    this.polygons.push(polygon)
+    this.google.maps.event.addListener(polygon, 'click', (event) => {
+      this.drawMarkersInPolygon(polygon);
+    });
+    this.polygons.push(polygon);
   }
 
   removePolygon(polygon) {
@@ -135,7 +204,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   clearPolygons() {
-    this.polygons.forEach(polygon => polygon.setMap(null))
+    this.polygons.forEach(polygon => (polygon as any).setMap(null))
     this.polygons = [];
   }
 
@@ -148,7 +217,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   refreshPolygons() {
-    this.polygons.forEach(polygon => polygon.setOptions(this.getPolygonOptions()));
+    this.polygons.forEach(polygon => (polygon as any).setOptions(this.getPolygonOptions()));
   }
 
   getPolygonOptions() {
@@ -156,7 +225,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       strokeColor: '#000000',
       strokeOpacity: 0.8,
       strokeWeight: 2,
-      fillColor: 'BLUE',
+      fillColor: '#F9E784',
       fillOpacity: this.fillOpacity,
       editable: this.mode === Mode.ADJUSTING
     };

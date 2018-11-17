@@ -15,3 +15,12 @@ html, body {
 .cursor {
     cursor: pointer;
 }
+
+[hidden] {
+    display: none !important;
+}
+
+div {
+    white-space: pre-wrap !important;
+    font-weight: bold !important;
+  }
