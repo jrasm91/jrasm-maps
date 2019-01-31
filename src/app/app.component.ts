@@ -93,7 +93,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         position: google.maps.ControlPosition.TOP_CENTER,
         drawingModes: []
       },
-      polygonOptions: this.getPolygonOptions()
+      polygonOptions: this.getPolygonOptions({})
     });
 
     this.drawingManager.setMap(this.map);
@@ -158,7 +158,8 @@ export class AppComponent implements OnInit, AfterViewInit {
             lat: path.lat(),
             lng: path.lng()
           };
-        })
+        }),
+        fillColor: polygon.fillColor
       };
     });
 
@@ -172,7 +173,8 @@ export class AppComponent implements OnInit, AfterViewInit {
       if (map && map.name === name) {
         this.clearPolygons();
         for (let i = 0; i < map.polygons.length; i++) {
-          this.addPolygon(new google.maps.Polygon({ paths: map.polygons[i].paths }));
+          const polygon = map.polygons[i];
+          this.addPolygon(new google.maps.Polygon({ paths: polygon.paths, fillColor: polygon.fillColor }));
         }
         if (map.zoom) {
           this.map.setZoom(map.zoom);
@@ -188,8 +190,13 @@ export class AppComponent implements OnInit, AfterViewInit {
     })
   }
 
+  onPolygonColor(polygon) {
+    polygon.setOptions({ fillColor: 'green' });
+  }
+
   addPolygon(polygon) {
-    polygon.setOptions(this.getPolygonOptions());
+    console.log('added polygon', polygon);
+    polygon.setOptions(this.getPolygonOptions(polygon));
     polygon.setMap(this.map);
     this.google.maps.event.addListener(polygon, 'click', (event) => {
       this.drawMarkersInPolygon(polygon);
@@ -213,19 +220,19 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   deselectPolygon(polygon) {
-    polygon.setOptions(this.getPolygonOptions());
+    polygon.setOptions(this.getPolygonOptions(polygon));
   }
 
   refreshPolygons() {
-    this.polygons.forEach(polygon => (polygon as any).setOptions(this.getPolygonOptions()));
+    this.polygons.forEach(polygon => (polygon as any).setOptions(this.getPolygonOptions(polygon)));
   }
 
-  getPolygonOptions() {
+  getPolygonOptions(polygon) {
     return {
       strokeColor: '#000000',
       strokeOpacity: 0.8,
       strokeWeight: 2,
-      fillColor: '#F9E784',
+      fillColor: polygon.fillColor || '#F9E784',
       fillOpacity: this.fillOpacity,
       editable: this.mode === Mode.ADJUSTING
     };
@@ -233,10 +240,9 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   getSelectedOptions() {
     return {
-      strokeColor: '#000000',
+      strokeColor: 'black',
       strokeOpacity: 0.8,
-      strokeWeight: 3,
-      fillColor: '#FF0000',
+      strokeWeight: 10,
       fillOpacity: this.fillOpacity,
       editable: this.mode === Mode.ADJUSTING
     };
@@ -244,13 +250,13 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   zoomIn = function () {
     this.map.setOptions({
-      zoom: this.map.getZoom() + 1
+      zoom: this.map.getZoom() + 0.5
     });
   }
 
   zoomOut = function () {
     this.map.setOptions({
-      zoom: this.map.getZoom() - 1
+      zoom: this.map.getZoom() - 0.5
     });
   }
 

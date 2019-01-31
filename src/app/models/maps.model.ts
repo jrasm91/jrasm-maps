@@ -5,6 +5,7 @@ export interface MapPosition {
 
 export interface MapPolygon {
     paths: MapPosition[];
+    fillColor: string;
 }
 
 export interface MapMarker {

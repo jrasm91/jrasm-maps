@@ -11,6 +11,9 @@ html, body {
     height: 100%;
 }
 
+.gm-style-iw {
+    font-size: 1em !important;
+}
 
 .cursor {
     cursor: pointer;
